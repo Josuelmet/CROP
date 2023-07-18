@@ -1,4 +1,7 @@
-#@title POLICE code
+import torch
+from torch import Tensor
+from torch import nn
+
 
 def sign(tensor):
     return tensor.sign() + (tensor == 0)
