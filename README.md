@@ -1,5 +1,10 @@
 # [Provable Instance Specific Robustness via Linear Constraints](https://openreview.net/forum?id=aVbG8bM1wg)
 
+To use POLICE in your own code, do...
+TODO: describe casting + uncasting; fine-tuning
+TODO: mention do_not_constrain
+
+
 Experiment configurations for [police_robustness.ipynb](police_robustness.ipynb):
 
 
