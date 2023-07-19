@@ -1,5 +1,7 @@
 # [Provable Instance Specific Robustness via Linear Constraints](https://openreview.net/forum?id=aVbG8bM1wg)
 
+TODO: add colab link: https://colab.research.google.com/drive/1HvQZJd9b3pgmjr5K6QUu_M9rtRA-Pvau
+
 To use POLICE in your own code, do...
 
 TODO: describe casting + uncasting; fine-tuning
