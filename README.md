@@ -1,6 +1,7 @@
 # Provable Instance Specific Robustness via Linear Constraints
 
-Experiment configurations for police_robustness.ipynb:
+Experiment configurations for [police_robustness.ipynb](police_robustness.ipynb):
+
 
 Figure 1 uses dataset="moons", imbalanced=True
 * Figure 1, top: No additional hyperparameters
