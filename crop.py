@@ -182,3 +182,32 @@ class ConstrainedSequential(nn.Sequential):
             return input[:-R* V]
         else:
             return input
+
+
+
+
+@torch.no_grad()
+def check_layerwise_signs(model,constraints):
+    v = constraints
+    layerwise_flags = []
+    layerwise_unmatched_act = []
+    '''
+    skip_all_next = False
+    '''
+    for m in model._modules.values():
+        if is_constrained(m):
+            v = m(v, R=len(constraints), V=1)
+        else:
+            v = m(v)
+
+        # If this layer was never constrained:
+        if 'last_extra_bias' not in vars(m):
+            continue
+
+        v_sign = v > 0
+        match = v_sign  != v_sign[0,...]
+#         print('Abs sum of sign unmatched activ.', torch.sum(torch.abs(v[match])))
+        layerwise_unmatched_act.append(torch.sum(torch.abs(v[match])))
+        layerwise_flags.append(torch.all(v_sign  == v_sign[0,...]))
+
+    return layerwise_flags, layerwise_unmatched_act
