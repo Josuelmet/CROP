@@ -12,7 +12,7 @@ TODO: mention do_not_constrain
 TODO: mention requirements or lack thereof
 
 
-Experiment configurations for [police_robustness.ipynb](police_robustness.ipynb):
+Experiment configurations for [crop_robustness_example.ipynb](crop_robustness_example.ipynb):
 
 
 Figure 1 uses dataset="moons", imbalanced=True
