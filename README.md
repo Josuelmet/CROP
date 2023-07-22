@@ -1,17 +1,33 @@
 # [Provable Instance Specific Robustness via Linear Constraints](https://openreview.net/forum?id=aVbG8bM1wg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HvQZJd9b3pgmjr5K6QUu_M9rtRA-Pvau)
 
+Requirements:
+```
+torch
+```
+
 Using CROP with your own model:
 
-'''ruby
-print('hi')
-'''
+```ruby
+from crop import *
 
-TODO: describe casting + uncasting; fine-tuning
+# 1) Set layer.do_not_constrain = True to any Linear/normalization layer that should not be constrained
+# For example, if constraining only the last layer, then all layers but the last need to have .do_not_constrain = True before casting.
+# For example: model._modules['0']. do_not_constrain = True
 
-TODO: mention do_not_constrain
+# 2) Cast the model to a ConstrainedSequential
+# If you are constraining the last layer, pass constrain_last = True in the cast() function.
+model = ConstrainedSequential.cast(model)
 
-TODO: mention requirements or lack thereof
+# 3) Make your R x V x D array of constraint regions and vertices.
+constraints = torch.Tensor([...]).to(device).to(dtype) # device and dtype should match those of your model
+
+# 4) Fine-tune (for just a few epochs) or train (from scratch) your model on the constraints
+
+# 5) Uncast your model if desired / if using SplineCam:
+if is_constrained(model):
+    model = ConstrainedSequential.uncast(model)
+```
 
 
 Experiment configurations for [crop_robustness_example.ipynb](crop_robustness_example.ipynb):
