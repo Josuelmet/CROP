@@ -1,7 +1,11 @@
 # [Provable Instance Specific Robustness via Linear Constraints](https://openreview.net/forum?id=aVbG8bM1wg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HvQZJd9b3pgmjr5K6QUu_M9rtRA-Pvau)
 
-To use CROP on your own model: 
+Using CROP with your own model:
+
+'''ruby
+print('hi')
+'''
 
 TODO: describe casting + uncasting; fine-tuning
 
