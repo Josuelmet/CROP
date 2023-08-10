@@ -1,7 +1,6 @@
-import torch
 from torch import Tensor
-from torch import nn
 
+EPS = 1e-2
 
 def sign(tensor):
     return tensor.sign() + (tensor == 0)
@@ -53,7 +52,7 @@ def enforce_constraint_linear(
 
     # Look by how much do we have to shift each hyper-plane
     # so that all constraints have the majority sign
-    extra_bias = (h_c[:, conflict_dims] * desired_signs).amin(0).clamp(max=0) * desired_signs * (1 + 1e-3)
+    extra_bias = (h_c[:, conflict_dims] * desired_signs).amin(0).clamp(max=0) * desired_signs * (1 + EPS)
     h[:, conflict_dims] -= extra_bias
     self.last_extra_bias = extra_bias
     self.last_conflict_dims = conflict_dims
@@ -62,12 +61,60 @@ def enforce_constraint_linear(
 
 
 
+# NOTE: This method has not yet been tested for Conv1D or Conv3D
+
+def enforce_constraint_conv(
+    self, h: Tensor, R: int, V: int, force_linearity=True
+) -> Tensor:
+
+    # Get the number of channels
+    C = h.shape[1]
+
+    # Isolate the preactivations belonging to constraint region vertices
+    h_c = torch.clone(h[-R * V:])
+    # Make the first dimension the channel dimension
+    h_c = h_c.transpose(0, 1)
+    # Flatten all but the first two dimensions
+    h_c_flat = h_c.reshape((C, R, -1))
+
+
+    with torch.no_grad():
+        # The bias applied to each channel's output is a scalar.
+        # Therefore, we need to take the aggregate sum of *all* entry signs from
+        # *all* vertices of *eac h* constraint region for *each* channel.
+        # We do this via sign(h_c_flat).sum(2), which returns a (C x R) matrix.
+        # Taking the sign() of that matrix indicates the majority sign of each
+        # channel of each constraint region.
+        regionwise_majority = sign(sign(h_c_flat).sum(2))
+
+        # regionwise_majority is now a (C x R) binary tensor with values {-1, 1}.
+        # We compute desired_signs (a length-C vector) via majority vote among regions
+        desired_signs = sign(regionwise_majority.sum(1))
+
+        # If we don't need to force linearity in all regions,
+        # then we only need to look at points that are part of the majority-sign coalition.
+        # All other points will be multiplied by zero.
+        if not force_linearity:
+            h_c_flat *= (regionwise_majority == desired_signs[:, None]).unsqueeze(2)
+
+
+    # Calculate extra bias
+    extra_bias = (h_c_flat * desired_signs[:, None, None]).amin((1,2)).clamp(max=0) * desired_signs * (1 + EPS)
+
+    # Add and store extra bias
+    self.last_extra_bias = extra_bias
+    # Reshape extra_bias to be compatible with the shape of h
+    return h - extra_bias.reshape((1, C,) + tuple(torch.ones(h.ndim - 2).to(int)))
+
+
+
+
 
 def is_supported(layer):
     supported = [
         # nn.modules.pooling._AvgPoolNd,
-        # nn.modules.conv._ConvNd,
-        # nn.modules.conv._ConvTransposeNd,
+        nn.modules.conv._ConvNd,
+        nn.modules.conv._ConvTransposeNd,
         nn.modules.batchnorm._BatchNorm,
         nn.Linear
     ]
@@ -75,6 +122,9 @@ def is_supported(layer):
 
 def is_constrained(layer):
     return 'constrained' in layer.__class__.__name__.lower()
+
+def is_conv(layer):
+    return isinstance(layer, nn.modules.conv._ConvNd) or isinstance(layer, nn.modules.conv._ConvTransposeNd)
 
 
 
@@ -86,8 +136,11 @@ def cast(cls, module: nn.Module):
     assert isinstance(module, cls)
     return module
 
-def forward(self, input, R, V, force_linearity=True):
+def forward_linear(self, input, R, V, force_linearity=True):
     return enforce_constraint_linear(self, self.prev_class.forward(self, input), R, V, force_linearity)
+
+def forward_conv(self, input, R, V, force_linearity=True):
+    return enforce_constraint_conv(self, self.prev_class.forward(self, input), R, V, force_linearity)
 
 
 # Make a Constrained layer via casting.
@@ -97,7 +150,7 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
 
     new_class = type(f'Constrained{layer.__class__.__name__}', (layer.__class__,), {
                         "cast": cast,
-                        "forward": forward
+                        "forward": forward_conv if is_conv(layer) else forward_linear,
                     })
     return new_class.cast(layer)
 
@@ -114,10 +167,10 @@ class ConstrainedSequential(nn.Sequential):
 
         modules = [m for m in model if is_supported(m) or isinstance(m, nn.Sequential)]
         for m in modules[:-1]:
+            if 'do_not_constrain' in vars(m):
+                if m.do_not_constrain:
+                    continue
             if is_supported(m):
-                if 'do_not_constrain' in vars(m):
-                    if m.do_not_constrain:
-                        continue
                 m = constrain_layer(m)
             elif isinstance(m, nn.Sequential):
                 m = ConstrainedSequential.cast(m, constrain_last=True, main=False)
@@ -133,23 +186,25 @@ class ConstrainedSequential(nn.Sequential):
     @classmethod
     def uncast(cls, model):
 
-        # TODO: Consider using super().eval() and merging this function with eval().
-
-        # TODO: Fix uncasting to work with convolutional layers. This may require changing the forward enforcement function
-
         if not is_constrained(model):
             return model
 
         assert isinstance(model, cls)
         model.eval()
 
-        for m in model._modules.values():
+        for i, m in enumerate(model):
             if not is_constrained(m):
                 continue
-
+            if isinstance(m, nn.Sequential):
+                model[i] = ConstrainedSequential.uncast(m)
+                continue
             with torch.no_grad():
-                m.bias[m.last_conflict_dims] -= m.last_extra_bias
-            m.__class__ = m.prev_class
+                if is_conv(m):
+                    model[i].bias -= m.last_extra_bias
+                else:
+                    model[i].bias[m.last_conflict_dims] -= m.last_extra_bias
+            model[i].__class__ = m.prev_class
+
 
         model.__class__ = model.prev_class
         assert isinstance(model, model.prev_class)
@@ -158,10 +213,6 @@ class ConstrainedSequential(nn.Sequential):
 
 
     def forward(self, input, constraints, force_linearity=True):
-
-        # TODO: Consider adding "if training" to this function so that eval() works optimally
-
-        # TODO: Need to make sure this code works with VGG w/ Avg-pooling
 
         R, V = constraints.shape[:2]
 
@@ -191,14 +242,14 @@ def check_layerwise_signs(model,constraints):
     v = constraints
     layerwise_flags = []
     layerwise_unmatched_act = []
-    '''
-    skip_all_next = False
-    '''
-    for m in model._modules.values():
-        if is_constrained(m):
-            v = m(v, R=len(constraints), V=1)
-        else:
-            v = m(v)
+    layerwise_act = []
+
+    for m in model.modules():
+        if isinstance(m, nn.Sequential):
+            continue
+
+        v = m(v, R=1, V=len(constraints)) if is_constrained(m) else m(v)
+        layerwise_act.append(v)
 
         # If this layer was never constrained:
         if 'last_extra_bias' not in vars(m):
@@ -206,8 +257,7 @@ def check_layerwise_signs(model,constraints):
 
         v_sign = v > 0
         match = v_sign  != v_sign[0,...]
-#         print('Abs sum of sign unmatched activ.', torch.sum(torch.abs(v[match])))
         layerwise_unmatched_act.append(torch.sum(torch.abs(v[match])))
         layerwise_flags.append(torch.all(v_sign  == v_sign[0,...]))
 
-    return layerwise_flags, layerwise_unmatched_act
+    return layerwise_flags, layerwise_unmatched_act, layerwise_act
