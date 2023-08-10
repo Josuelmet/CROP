@@ -1,3 +1,5 @@
+import torch
+from torch import nn
 from torch import Tensor
 
 EPS = 1e-2
