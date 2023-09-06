@@ -186,7 +186,7 @@ class ConstrainedSequential(nn.Sequential):
         return model
 
     @classmethod
-    def uncast(cls, model):
+    def uncast(cls, model, constraints=None, main=True):
 
         if not is_constrained(model):
             return model
@@ -194,11 +194,16 @@ class ConstrainedSequential(nn.Sequential):
         assert isinstance(model, cls)
         model.eval()
 
+        # If constraints are given, pass the constraints one lass time through the model
+        # to make sure that the extra biases are correct.
+        if constraints is not None and main:
+            model(torch.Tensor([]).to(constraints.dtype).to(constraints.device), constraints)
+
         for i, m in enumerate(model):
             if not is_constrained(m):
                 continue
             if isinstance(m, nn.Sequential):
-                model[i] = ConstrainedSequential.uncast(m)
+                model[i] = ConstrainedSequential.uncast(m, main=False)
                 continue
             with torch.no_grad():
                 if is_conv(m):
