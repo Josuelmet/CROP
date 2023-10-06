@@ -27,7 +27,7 @@ constraints = torch.Tensor([...]).to(device).to(dtype) # device and dtype should
 
 # 5) Uncast your model if desired / if using SplineCam:
 if is_constrained(model):
-    model = ConstrainedSequential.uncast(model)
+    model = ConstrainedSequential.uncast(model, constraints)
 ```
 
 
