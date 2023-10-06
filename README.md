@@ -46,7 +46,8 @@ Figure 3 uses dataset="blobs", imbalanced=True
 
 ### SplineCam setup
 
-Here is how we setup SplineCam on Colab, but see the [SplineCam repository](https://github.com/AhmedImtiazPrio/splinecam/tree/main)
+Here is how we setup SplineCam on Colab, but see the [SplineCam repository](https://github.com/AhmedImtiazPrio/splinecam/tree/main).
+
 If using Conda, another option is to use the [SplineCam environment .yml file](https://github.com/AhmedImtiazPrio/splinecam/blob/main/environment.yml).
 
 ```
