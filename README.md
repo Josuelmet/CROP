@@ -1,14 +1,13 @@
 # [Provable Instance Specific Robustness via Linear Constraints (CROP)](https://openreview.net/forum?id=aVbG8bM1wg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HvQZJd9b3pgmjr5K6QUu_M9rtRA-Pvau)
 
-Requirements for CROP by itself:
+### Requirements for CROP (if using SplineCam, look at the end of this README):
 ```
 torch
 ```
 
-For SplineCam requirements (if desired for visualization), look at the end of this README
 
-Using CROP with your own model:
+### Using CROP with your own nn.Sequential model:
 
 ```ruby
 from crop import *
@@ -45,9 +44,11 @@ Figure 3 uses dataset="blobs", imbalanced=True
 * Figure 2, bottom right: constrained=True, fine_tune_constraints=True, constraint_eps=0.6
 
 
-SplineCam setup
+### SplineCam setup
 
-Here is how we setup SplineCam, but see the [SplineCam repository](https://github.com/AhmedImtiazPrio/splinecam/tree/main) for the most up-to-date details.
+Here is how we setup SplineCam on Colab, but see the [SplineCam repository](https://github.com/AhmedImtiazPrio/splinecam/tree/main)
+If using Conda, another option is to use the [SplineCam environment .yml file](https://github.com/AhmedImtiazPrio/splinecam/blob/main/environment.yml).
+
 ```
 # Taken from https://colab.research.google.com/github/count0/colab-gt/blob/master/colab-gt.ipynb
 # If this doesn't work, here's a potential workaround: https://stackoverflow.com/questions/69404659/troubles-with-graph-tool-installations-in-google-colab
