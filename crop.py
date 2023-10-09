@@ -200,7 +200,7 @@ class ConstrainedSequential(nn.Sequential):
         # so we just choose the first constraint point.
         if constraints is not None and main:
             # model(torch.Tensor([]).to(constraints.dtype).to(constraints.device), constraints)
-            model(constraints[0][0], constraints)
+            model(constraints[0][0:1], constraints)
 
         for i, m in enumerate(model):
             if not is_constrained(m):
