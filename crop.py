@@ -177,7 +177,7 @@ class ConstrainedSequential(nn.Sequential):
             elif isinstance(m, nn.Sequential):
                 m = ConstrainedSequential.cast(m, constrain_last=True, main=False)
 
-        if constrain_last and is_supported(m):
+        if constrain_last and is_supported(modules[-1]):
             modules[-1] = constrain_layer(modules[-1])
         elif isinstance(modules[-1], nn.Sequential):
             modules[-1] = ConstrainedSequential.cast(modules[-1], constrain_last=constrain_last, main=False)
