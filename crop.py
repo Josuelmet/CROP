@@ -196,11 +196,10 @@ class ConstrainedSequential(nn.Sequential):
 
         # If constraints are given, pass the constraints one lass time through the model
         # to make sure that the extra biases are correct.
-        # It doesn't matter what our "official input" is,
-        # so we just choose the first constraint point.
         if constraints is not None and main:
-            # model(torch.Tensor([]).to(constraints.dtype).to(constraints.device), constraints)
-            model(constraints[0][0:1], constraints)
+            model(torch.Tensor([]).to(constraints.dtype).to(constraints.device), constraints)
+            # Alternate: it doesn't matter what our "official input" is, so we could just choose the first constraint point.
+            #model(constraints[0][0:1], constraints)
 
         for i, m in enumerate(model):
             if not is_constrained(m):
