@@ -147,6 +147,7 @@ def forward_conv(self, input, R, V, force_linearity=True):
 
 # Make a Constrained layer via casting.
 def constrain_layer(layer: nn.Module, C=None, N_c=None):
+    assert is_supported(layer)
     if is_constrained(layer):
         return layer
 
@@ -208,6 +209,10 @@ class ConstrainedSequential(nn.Sequential):
                 model[i] = ConstrainedSequential.uncast(m, main=False)
                 continue
             with torch.no_grad():
+                if model[i].bias is None:
+                    # TODO: fix all this "bias" / "extra bias" / "last_conflict_dims" stuff to make code simpler
+                    #       and so that this next code line works with batchnorm + linear
+                    model[i].bias = nn.Parameter(m.last_extra_bias)
                 if is_conv(m):
                     model[i].bias -= m.last_extra_bias
                 else:
