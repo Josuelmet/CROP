@@ -195,9 +195,10 @@ def is_supported(layer):
 def is_constrained(layer):
     return 'constrained' in layer.__class__.__name__.lower()
 
+'''
 def is_conv(layer):
     return isinstance(layer, nn.modules.conv._ConvNd) or isinstance(layer, nn.modules.conv._ConvTransposeNd)
-
+''';
 
 
 @classmethod
@@ -227,7 +228,8 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
 
     new_class = type(f'Constrained{layer.__class__.__name__}', (layer.__class__,), {
                         "cast": cast,
-                        "forward": forward_conv if is_conv(layer) else forward_linear,
+                        #"forward": forward_conv if is_conv(layer) else forward_linear,
+                        "forward": forward_linear if isinstance(layer, nn.Linear) else forward_conv
                     })
     return new_class.cast(layer)
 
