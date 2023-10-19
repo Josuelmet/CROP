@@ -285,11 +285,14 @@ class ConstrainedSequential(nn.Sequential):
                 model[i] = ConstrainedSequential.uncast(m, main=False)
                 continue
             with torch.no_grad():
+                '''
                 if is_conv(m):
                     model[i].bias -= m.last_extra_bias
                 else:
                     if any(m.last_conflict_dims.flatten()):
                         model[i].bias[m.last_conflict_dims] -= m.last_extra_bias
+                '''
+                model[i].bias -= m.last_extra_bias
             model[i].__class__ = m.prev_class
 
 
