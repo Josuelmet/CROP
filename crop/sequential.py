@@ -2,12 +2,14 @@ import torch
 from torch import nn
 from torch import Tensor
 
+'''
 EPS = 1e-2
+'''
 
 def sign(tensor):
     return tensor.sign() + (tensor == 0)
 
-
+'''
 def enforce_constraint_linear(
     self, h: Tensor, R: int, V: int, force_linearity=True
 ) -> Tensor:
@@ -107,7 +109,7 @@ def enforce_constraint_conv(
     self.last_extra_bias = extra_bias
     # Reshape extra_bias to be compatible with the shape of h
     return h - extra_bias.reshape((1, C,) + tuple(torch.ones(h.ndim - 2).to(int)))
-
+''';
 
 
 
@@ -209,11 +211,13 @@ def cast(cls, module: nn.Module):
 
 def forward_linear(self, input, R, V, force_linearity=True, eps=1e-2):
     #return enforce_constraint_linear(self, self.prev_class.forward(self, input), R, V, force_linearity)
-    return enforce_constraint(self, self.prev_class.forward(self, input), R, V, dim=-1, force_linearity, eps)
+    return enforce_constraint(self, self.prev_class.forward(self, input),
+                              R=R, V=V, dim=-1, force_linearity=force_linearity, eps=eps)
     
 def forward_conv(self, input, R, V, force_linearity=True, eps=1e-2):
     #return enforce_constraint_conv(self, self.prev_class.forward(self, input), R, V, force_linearity)
-    return enforce_constraint(self, self.prev_class.forward(self, input), R, V, dim=1, force_linearity, eps)
+    return enforce_constraint(self, self.prev_class.forward(self, input),
+                              R=R, V=V, dim=1, force_linearity=force_linearity, eps=eps)
 
 # Make a Constrained layer via casting.
 def constrain_layer(layer: nn.Module, C=None, N_c=None):
