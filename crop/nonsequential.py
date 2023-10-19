@@ -84,7 +84,7 @@ class ConstrainedNonSequential(nn.Module):
                 m = crop.ConstrainedSequential.uncast(m)
             else:
                 # This is the same code as uncasting a Linear layer.
-                m.bias[m.last_conflict_dims] -= m.last_extra_bias
+                m.bias -= m.last_extra_bias
                 m.__class__ = m.prev_class
 
         # "Unconstrain" the model itself, and make sure unconstraining changed the class.
