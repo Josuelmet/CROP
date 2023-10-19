@@ -6,4 +6,4 @@ Linear layer tests: [![Open In Colab](https://colab.research.google.com/assets/c
 
 Convolutional + Batchnorm layer tests: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CBizVT1l0HP6eiVdWTyg4UqduSW51nxN)
 
-Non-sequential (ViT, ResNet, DenseNet, etc.) tests: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CBizVT1l0HP6eiVdWTyg4UqduSW51nxN)
+Non-sequential (ViT, ResNet, DenseNet, etc.) tests: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1gM1vGGGQW2_xZ4QRQngYJzPdyv0tAWY4)
