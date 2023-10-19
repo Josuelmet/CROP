@@ -174,6 +174,8 @@ class ConstrainedSequential(nn.Sequential):
                 if m.do_not_constrain:
                     continue
             if is_supported(m):
+                if m.bias is None:
+                    raise ValueError(f"Layer {m}.bias is None. Please ensure that all layers have biases before casting.")
                 m = constrain_layer(m)
             elif isinstance(m, nn.Sequential):
                 m = ConstrainedSequential.cast(m, constrain_last=True, main=False)
@@ -209,10 +211,6 @@ class ConstrainedSequential(nn.Sequential):
                 model[i] = ConstrainedSequential.uncast(m, main=False)
                 continue
             with torch.no_grad():
-                if model[i].bias is None:
-                    # TODO: fix all this "bias" / "extra bias" / "last_conflict_dims" stuff to make code simpler
-                    #       and so that this next code line works with batchnorm + linear
-                    model[i].bias = nn.Parameter(m.last_extra_bias)
                 if is_conv(m):
                     model[i].bias -= m.last_extra_bias
                 else:
