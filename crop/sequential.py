@@ -111,6 +111,74 @@ def enforce_constraint_conv(
 
 
 
+def enforce_constraint(
+    self, h: Tensor, R: int, V: int, dim: int, force_linearity=True, eps=1e-2
+) -> Tensor:
+    """
+    enforce constraint over dimension dim.
+        dim = 1 for channel-based constraint (e.g., Conv and Batchnorm)
+        dim = -1 for neuron-based constraint (e.g., Linear layers)
+    """
+
+    # Get the number of dimensions for the extra bias.
+    # Same as the dimension of bias in Linear, Conv, Batchnorm layers.
+    D = h.shape[dim]
+
+    # Isolate the preactivations belonging to constraint region vertices.
+    # Make h_c into shape (RV, *).
+    # i.e., (RV, D) for Linear layers, or (RV, C, H, W) in Conv layers.
+    h_c = torch.clone(h[-R * V:])
+
+    # Make dim the first dimension.
+    # i.e., (D, RV) for Linear layers, or (C, RV, H, W) in Conv layers
+    h_c = h_c.transpose(0, dim)
+    
+    # Flatten all other dimensions and split the first dimension into (D, R) 
+    # i.e., (D, R, V) for Linear layers, or (C, R, VHW) for Conv layers 
+    h_c = h_c.reshape((D, R, -1))
+
+    
+    with torch.no_grad():
+        # The bias applied to each dimension of D is a scalar,
+        # where D is output_dim in Linear layers and out_channels in Conv/Batchnorm.
+        # First we need to find out which sign dominates each dimension of D
+        # for each user-defined constraint region in R.
+        # Let's examine the channel-wise case
+        # (of which the Linear case is a simplification with H=1 and W=1).
+        # We need to take the aggregate sum of ALL entry signs (all H and W)
+        # from ALL vertices in V for EACH constraint region in R
+        # for EACH dimension in D (i.e., channel in C).
+        # We do this via sign(h_c).sum(2), which returns a (D x R) matrix.
+        # Taking the sign() of that matrix() indicates the majority sign of each
+        # dimension/channel of each constraint region.
+        regionwise_majority = sign(sign(h_c).sum(2))
+
+        # regionwise_majority is a (D x R) binary tensor in {-1, 1}.
+        # We now compute desired_signs, a length-D vector, via majority vote among regions.
+        desired_signs = sign(regionwise_majority.sum(1))
+
+        # If we don't need to force linearity in all regions
+        # (i.e., if we don't need ALL signs in D to agree for ALL regions in R),
+        # then we only need to look at points that are part of the majority-sign coalition.
+        # All other points will be ignored via multiplication by zero.
+        if not force_linearity:
+            h_c *= (regionwise_majority == desired_signs[:, None]).unsqueeze(2)
+
+
+    # Calculate extra bias required, which will be a length-D vector.
+    # Recall that h_c has shape (D, R, -1),
+    # while desired_signs is a length-D binary vector in {-1, 1}.
+    self.last_extra_bias = (h_c * desired_signs[:, None, None]).amin((1,2)).clamp(max=0) * desired_signs * (1 + eps)
+
+    # Add the extra bias after reshaping to be compatible with the shape of h
+    shape = torch.ones(h.ndim).int()
+    shape[dim] = D
+    return h - self.last_extra_bias.reshape(tuple(shape))
+    
+
+
+
+
 
 def is_supported(layer):
     supported = [
@@ -138,12 +206,14 @@ def cast(cls, module: nn.Module):
     assert isinstance(module, cls)
     return module
 
-def forward_linear(self, input, R, V, force_linearity=True):
-    return enforce_constraint_linear(self, self.prev_class.forward(self, input), R, V, force_linearity)
 
-def forward_conv(self, input, R, V, force_linearity=True):
-    return enforce_constraint_conv(self, self.prev_class.forward(self, input), R, V, force_linearity)
-
+def forward_linear(self, input, R, V, force_linearity=True, eps=1e-2):
+    #return enforce_constraint_linear(self, self.prev_class.forward(self, input), R, V, force_linearity)
+    return enforce_constraint(self, self.prev_class.forward(self, input), R, V, dim=-1, force_linearity, eps)
+    
+def forward_conv(self, input, R, V, force_linearity=True, eps=1e-2):
+    #return enforce_constraint_conv(self, self.prev_class.forward(self, input), R, V, force_linearity)
+    return enforce_constraint(self, self.prev_class.forward(self, input), R, V, dim=1, force_linearity, eps)
 
 # Make a Constrained layer via casting.
 def constrain_layer(layer: nn.Module, C=None, N_c=None):
