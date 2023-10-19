@@ -214,7 +214,8 @@ class ConstrainedSequential(nn.Sequential):
                 if is_conv(m):
                     model[i].bias -= m.last_extra_bias
                 else:
-                    model[i].bias[m.last_conflict_dims] -= m.last_extra_bias
+                    if any(m.last_conflict_dims):
+                        model[i].bias[m.last_conflict_dims] -= m.last_extra_bias
             model[i].__class__ = m.prev_class
 
 
