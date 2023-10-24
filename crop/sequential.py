@@ -174,9 +174,8 @@ def enforce_constraint(
 
     # Add the extra bias after reshaping to be compatible with the shape of h
     #shape = torch.ones(h.ndim).int()
-    #shape[dim] = D
-    #return h - self.last_extra_bias.reshape(tuple(shape))
-    shape = [D] + list(torch.ones(h.ndim-1).int())
+    shape = [1] * h.ndim
+    shape[dim] = D
     return h - self.last_extra_bias.reshape(shape)
     
 
