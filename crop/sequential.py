@@ -173,9 +173,11 @@ def enforce_constraint(
     self.last_extra_bias = (h_c * desired_signs[:, None, None]).amin((1,2)).clamp(max=0) * desired_signs * (1 + eps)
 
     # Add the extra bias after reshaping to be compatible with the shape of h
-    shape = torch.ones(h.ndim).int()
-    shape[dim] = D
-    return h - self.last_extra_bias.reshape(tuple(shape))
+    #shape = torch.ones(h.ndim).int()
+    #shape[dim] = D
+    #return h - self.last_extra_bias.reshape(tuple(shape))
+    shape = [D] + list(torch.ones(h.ndim-1).int())
+    return h - self.last_extra_bias.reshape(shape)
     
 
 
