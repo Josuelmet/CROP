@@ -227,6 +227,8 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
     if is_constrained(layer):
         return layer
 
+    layer.last_extra_bias = torch.zeros_like(layer.bias)
+
     new_class = type(f'Constrained{layer.__class__.__name__}', (layer.__class__,), {
                         "cast": cast,
                         #"forward": forward_conv if is_conv(layer) else forward_linear,
