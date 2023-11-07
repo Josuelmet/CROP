@@ -238,8 +238,8 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
 
 class ConstrainedSequential(nn.Sequential):
     @classmethod
-    def cast(cls, model: nn.Sequential, constrain_last=False, main=True):
-        assert isinstance(model, nn.Module)
+    def cast(cls, model, constrain_last=False, main=True):
+        assert isinstance(model, nn.Sequential)
 
         model.prev_class = type(model)
         model.__class__ = cls
@@ -255,14 +255,14 @@ class ConstrainedSequential(nn.Sequential):
                     raise ValueError(f"Layer {m}.bias is None. Please ensure that all layers have biases before casting.")
                 m = constrain_layer(m)
             elif isinstance(m, nn.Sequential):
-                m = ConstrainedSequential.cast(m, constrain_last=True, main=False)
+                m = cls.cast(m, constrain_last=True, main=False)
 
         if constrain_last and is_supported(modules[-1]):
             modules[-1] = constrain_layer(modules[-1])
         elif isinstance(modules[-1], nn.Sequential):
-            modules[-1] = ConstrainedSequential.cast(modules[-1], constrain_last=constrain_last, main=False)
+            modules[-1] = cls.cast(modules[-1], constrain_last=constrain_last, main=False)
 
-        assert isinstance(model, ConstrainedSequential)
+        assert isinstance(model, cls)
         return model
 
     @classmethod
@@ -285,7 +285,7 @@ class ConstrainedSequential(nn.Sequential):
             if not is_constrained(m):
                 continue
             if isinstance(m, nn.Sequential):
-                model[i] = ConstrainedSequential.uncast(m, main=False)
+                model[i] = cls.uncast(m, main=False)
                 continue
             with torch.no_grad():
                 '''
