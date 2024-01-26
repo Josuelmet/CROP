@@ -259,8 +259,9 @@ class ConstrainedSequential(nn.Sequential):
                     raise ValueError(f"Layer {m}.bias is None. Please ensure that all layers have biases before casting.")
                 m = constrain_layer(m)
             elif isinstance(m, nn.Sequential):
-                m = cls.cast(m, constrain_last=True, main=False)
-
+                #m = cls.cast(m, constrain_last=True, main=False)
+                m = cls.cast(m, main=False)
+                
         #if constrain_last and is_supported(modules[-1]):
         #    modules[-1] = constrain_layer(modules[-1])
         #elif isinstance(modules[-1], nn.Sequential):
