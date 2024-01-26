@@ -240,7 +240,8 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
 
 class ConstrainedSequential(nn.Sequential):
     @classmethod
-    def cast(cls, model, constrain_last=False, main=True):
+    def cast(cls, model, main=True):
+    #def cast(cls, model, constrain_last=False, main=True):
         assert isinstance(model, nn.Sequential)
 
         model.prev_class = type(model)
@@ -248,7 +249,8 @@ class ConstrainedSequential(nn.Sequential):
         model.main = main
 
         modules = [m for m in model if is_supported(m) or isinstance(m, nn.Sequential)]
-        for m in modules[:-1]:
+        #for m in modules[:-1]:
+        for m in modules:
             if 'do_not_constrain' in vars(m):
                 if m.do_not_constrain:
                     continue
@@ -259,10 +261,10 @@ class ConstrainedSequential(nn.Sequential):
             elif isinstance(m, nn.Sequential):
                 m = cls.cast(m, constrain_last=True, main=False)
 
-        if constrain_last and is_supported(modules[-1]):
-            modules[-1] = constrain_layer(modules[-1])
-        elif isinstance(modules[-1], nn.Sequential):
-            modules[-1] = cls.cast(modules[-1], constrain_last=constrain_last, main=False)
+        #if constrain_last and is_supported(modules[-1]):
+        #    modules[-1] = constrain_layer(modules[-1])
+        #elif isinstance(modules[-1], nn.Sequential):
+        #    modules[-1] = cls.cast(modules[-1], constrain_last=constrain_last, main=False)
 
         assert isinstance(model, cls)
         return model
