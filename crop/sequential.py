@@ -229,7 +229,7 @@ def constrain_layer(layer: nn.Module, C=None, N_c=None):
 
     # register last_extra_bias as a buffer so that PyTorch automatically handles dtype/device casting.
     #layer.last_extra_bias = torch.zeros_like(layer.bias)
-    layer.register_buffer("last_extra_bias", torch.zeros_like(layers.bias))
+    layer.register_buffer("last_extra_bias", torch.zeros_like(layer.bias))
 
     new_class = type(f'Constrained{layer.__class__.__name__}', (layer.__class__,), {
                         "cast": cast,
