@@ -352,7 +352,7 @@ def check_layerwise_signs(model,constraints):
         layerwise_act.append(v)
 
         # If this layer was never constrained:
-        if 'last_extra_bias' not in vars(m):
+        if 'last_extra_bias' not in vars(m) and 'last_extra_bias' not in m._buffers.keys():
             continue
 
         v_sign = v > 0
